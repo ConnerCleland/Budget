@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Budget</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="startingPage.css">
+    <link rel="stylesheet" href="homeButtons.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+        }
+        nav {
+            width: 100%;
+        }
+        nav ul li a:hover {
+            background-color: #575757;
+            padding: 6px; 
+            border-radius: 5px;
+        }
+        header, section {
+            width: 60%;
+            margin: 20px 0;
+        }
+    
+        #entries {
+            position: absolute;
+            right: 0;
+            top: -30px;
+            bottom: 0;
+            width: 280px;
+            padding: 0;
+            overflow-y: auto;
+            background-color: rgb(163, 163, 137);
+        }
+        .budget-entry {
+            padding: 10px;
+            background: linear-gradient(145deg, #e2e2e2, #c4c4c4);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            margin-bottom: 0;
+        }
+        .budget-entry p {
+            margin: 5px 0;
+        }
+        #myPieChart {
+            position: relative;
+            top: -450px;
+            right: 260px;
+            overflow: hidden;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="home.html">Home</a></li>
+            <li><a href="calendar.html">Calendar</a></li>
+        </ul>
+    </nav>
+    <header>
+        <h1>Budget Machine</h1>
+    </header>
+    <section id="userInfo">
+        <h3>Enter your information down below</h3>
+        <form id="budgetForm">
+            <label for="category">Category:</label>
+            <input type="text" id="category" name="category" required><br><br>
+            <label for="amount">Amount:</label>
+            <input type="number" id="amount" name="amount" step="0.01" required><br><br>
+            <label for="emoji">Emoji:</label>
+            <select id="emoji" name="emoji" required>
+                <option value="🏠">🏠 Home</option>
+                <option value="🍔">🍔 Food</option>
+                <option value="🚗">🚗 Transport</option>
+                <option value="🎓">🎓 Education</option>
+                <option value="💡">💡 Utilities</option>
+                <option value="💊">💊 Healthcare</option>
+                <option value="🏖️">🏖️ Vacation</option>
+                <option value="💼">💼 Work</option>
+                <option value="🛍️">🛍️ Shopping</option>
+                <option value="📦">📦 Other</option>
+            </select><br><br>
+            <input type="submit" value="Add Entry" id="submitButton">
+        </form>
+    </section>
+        
+    <section id="userChart">
+        <section id="chartSection">
+            <canvas id="myPieChart"></canvas>
+        </section>
+        <section id="entries">
+            <h3>Total Expenses:</h3>
+            <p id="totalAmount">$0.00</p>
+        </section>
+    </section>
+    <script>
+        const spendingData = {};
+        const ctx = document.getElementById('myPieChart').getContext('2d');
+        const myPieChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                datasets: [{
+                    data: [],
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#FF5733', '#33FF57', 
+                        '#3357FF', '#8E44AD', '#F39C12', '#D35400', '#C0392B'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                aspectRatio: 1,
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            const label = data.labels[tooltipItem.index] || '';
+                            const value = data.datasets[0].data[tooltipItem.index];
+                            return `${label}: $${formatNumberWithCommas(value.toFixed(2))}`;
+                        },
+                        afterLabel: function(tooltipItem, data) {
+                            return data.labels[tooltipItem.index];
+                        }
+                    }
+                }
+            }
+        });
+    
+        document.getElementById('budgetForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+    
+            const category = document.getElementById('category').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const emoji = document.getElementById('emoji').value;
+    
+            const entry = document.createElement('div');
+            entry.className = 'budget-entry';
+            entry.dataset.originalCategory = category;
+            entry.dataset.originalAmount = amount;
+            entry.dataset.originalEmoji = emoji;
+            entry.innerHTML = `
+                <p>Category: <span class="category">${emoji} ${category}</span></p>
+                <p>Amount: $<span class="amount">${formatNumberWithCommas(amount.toFixed(2))}</span></p>
+                <button class="edit">Edit</button>
+                <button class="delete">Delete</button>
+                <div class="edit-section" style="display: none;">
+                    <label for="newCategory">New Category:</label>
+                    <br>
+                    <input type="text" class="newCategory" value="${category}">
+                    <br>
+                    <label for="newAmount">New Amount:</label>
+                    <input type="number" class="newAmount" value="${amount.toFixed(2)}" step="0.01">
+                    <br>
+                    <label for="newEmoji">New Emoji:</label>
+                    <select class="newEmoji">
+                        <option value="🏠" ${emoji === '🏠' ? 'selected' : ''}>🏠 Home</option>
+                        <option value="🍔" ${emoji === '🍔' ? 'selected' : ''}>🍔 Food</option>
+                        <option value="🚗" ${emoji === '🚗' ? 'selected' : ''}>🚗 Transport</option>
+                        <option value="🎓" ${emoji === '🎓' ? 'selected' : ''}>🎓 Education</option>
+                        <option value="💡" ${emoji === '💡' ? 'selected' : ''}>💡 Utilities</option>
+                        <option value="💊" ${emoji === '💊' ? 'selected' : ''}>💊 Healthcare</option>
+                        <option value="🏖️" ${emoji === '🏖️' ? 'selected' : ''}>🏖️ Vacation</option>
+                        <option value="💼" ${emoji === '💼' ? 'selected' : ''}>💼 Work</option>
+                        <option value="🛍️" ${emoji === '🛍️' ? 'selected' : ''}>🛍️ Shopping</option>
+                        <option value="📦" ${emoji === '📦' ? 'selected' : ''}>📦 Other</option>
+                    </select>
+                    <br>
+                    <button class="save">Save</button>
+                    <button class="cancel">Cancel</button>
+                </div>
+            `;
+            
+            document.getElementById('entries').appendChild(entry);
+    
+            updateTotal(amount);
+            updateSpendingData(emoji, amount);
+            updatePieChart();
+            document.getElementById('budgetForm').reset();
+    
+            entry.querySelector('.edit').addEventListener('click', function() {
+                toggleEditSection(entry);
+            });
+    
+            entry.querySelector('.save').addEventListener('click', function() {
+                saveEntry(entry);
+            });
+    
+            entry.querySelector('.cancel').addEventListener('click', function() {
+                toggleEditSection(entry);
+            });
+    
+            entry.querySelector('.delete').addEventListener('click', function() {
+                deleteEntry(entry);
+            });
+        });
+    
+        function toggleEditSection(entry) {
+            const editSection = entry.querySelector('.edit-section');
+            editSection.style.display = editSection.style.display === 'none' ? 'block' : 'none';
+        }
+    
+        function updateTotal(amountChange) {
+            const totalElement = document.getElementById('totalAmount');
+            let totalAmount = parseFloat(totalElement.textContent.replace('$', '').replace(/,/g, ''));
+            totalAmount += amountChange;
+            totalElement.textContent = `$${formatNumberWithCommas(totalAmount.toFixed(2))}`;
+        }
+    
+        function updateSpendingData(emoji, amountChange) {
+            if (spendingData[emoji]) {
+                spendingData[emoji] += amountChange;
+            } else {
+                spendingData[emoji] = amountChange;
+                myPieChart.data.labels.push(emoji);
+            }
+        }
+    
+        function updatePieChart() {
+            myPieChart.data.datasets[0].data = myPieChart.data.labels.map(label => spendingData[label]);
+            myPieChart.update();
+        }
+    
+        function saveEntry(entry) {
+            const newCategory = entry.querySelector('.newCategory').value;
+            const newAmount = parseFloat(entry.querySelector('.newAmount').value);
+            const newEmoji = entry.querySelector('.newEmoji').value;
+            const oldCategory = entry.dataset.originalCategory;
+            const oldAmount = parseFloat(entry.dataset.originalAmount);
+            const oldEmoji = entry.dataset.originalEmoji;
+    
+            if (newCategory !== '' && !isNaN(newAmount)) {
+                const categoryElement = entry.querySelector('.category');
+                const amountElement = entry.querySelector('.amount');
+    
+                categoryElement.textContent = `${newEmoji} ${newCategory}`;
+                amountElement.textContent = formatNumberWithCommas(newAmount.toFixed(2));
+    
+                updateTotal(newAmount - oldAmount);
+    
+                spendingData[oldEmoji] -= oldAmount;
+                if (spendingData[oldEmoji] <= 0) {
+                    delete spendingData[oldEmoji];
+                    const index = myPieChart.data.labels.indexOf(oldEmoji);
+                    if (index > -1) {
+                        myPieChart.data.labels.splice(index, 1);
+                    }
+                }
+    
+                if (spendingData[newEmoji]) {
+                    spendingData[newEmoji] += newAmount;
+                } else {
+                    spendingData[newEmoji] = newAmount;
+                    myPieChart.data.labels.push(newEmoji);
+                }
+    
+                updatePieChart();
+                toggleEditSection(entry);
+    
+                entry.dataset.originalCategory = newCategory;
+                entry.dataset.originalAmount = newAmount;
+                entry.dataset.originalEmoji = newEmoji;
+            }
+        }
+    
+        function deleteEntry(entry) {
+            const amount = parseFloat(entry.querySelector('.amount').textContent.replace(/,/g, ''));
+            const emoji = entry.dataset.originalEmoji;
+    
+            entry.remove();
+    
+            updateTotal(-amount);
+    
+            spendingData[emoji] -= amount;
+            if (spendingData[emoji] <= 0) {
+                delete spendingData[emoji];
+                const index = myPieChart.data.labels.indexOf(emoji);
+                if (index > -1) {
+                    myPieChart.data.labels.splice(index, 1);
+                }
+            }
+    
+            updatePieChart();
+        }
+    
+        function formatNumberWithCommas(number) {
+            return number.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+    </script>
+</body>
+</html>
